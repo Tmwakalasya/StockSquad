@@ -10,6 +10,7 @@ struct LeaderboardView: View {
                 Theme.bgGradient.ignoresSafeArea()
                 ScrollView {
                     VStack(spacing: 18) {
+                        chatBanner
                         ReturnsChartCard(members: store.leaderboard)
                         VStack(spacing: 12) {
                             ForEach(Array(store.leaderboard.enumerated()), id: \.element.id) { index, member in
@@ -23,7 +24,45 @@ struct LeaderboardView: View {
                 }
             }
             .navigationTitle("The Squad")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    NavigationLink {
+                        SquadChatView()
+                    } label: {
+                        Image(systemName: "bubble.left.and.bubble.right.fill")
+                    }
+                    .accessibilityLabel("Squad chat")
+                }
+            }
         }
+    }
+
+    private var chatBanner: some View {
+        NavigationLink {
+            SquadChatView()
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "bubble.left.and.bubble.right.fill")
+                    .font(.title3)
+                    .foregroundStyle(Theme.accent)
+                    .frame(width: 44, height: 44)
+                    .background(Theme.accent.opacity(0.15), in: Circle())
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Squad Chat")
+                        .font(.headline)
+                        .foregroundStyle(Theme.textPrimary)
+                    Text("Talk trades & trash talk with the crew")
+                        .font(.caption)
+                        .foregroundStyle(Theme.textSecondary)
+                }
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Theme.textSecondary)
+            }
+            .cardStyle(padding: 14)
+        }
+        .buttonStyle(.plain)
     }
 }
 
