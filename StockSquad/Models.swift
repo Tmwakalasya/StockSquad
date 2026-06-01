@@ -40,8 +40,8 @@ struct ScreenerStock: Identifiable {
     let id = UUID()
     let ticker: String
     let name: String
-    let price: Double
-    let dayChangePercent: Double
+    var price: Double
+    var dayChangePercent: Double
     let marketCap: Double
     let avgDailyVolume: Double   // shares traded per day — a liquidity gauge
     let sector: String

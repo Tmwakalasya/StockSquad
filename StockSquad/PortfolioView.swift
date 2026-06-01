@@ -10,6 +10,7 @@ struct PortfolioView: View {
                 Theme.bgGradient.ignoresSafeArea()
                 ScrollView {
                     VStack(spacing: 18) {
+                        LiveStatusBar()
                         HeroCard(member: store.me)
                         AllocationCard(holdings: store.me.holdings, total: store.me.totalValue)
                         HoldingsCard(holdings: store.me.holdings)
@@ -18,8 +19,10 @@ struct PortfolioView: View {
                     .padding(.top, 8)
                     .padding(.bottom, 28)
                 }
+                .refreshable { await store.refreshQuotes() }
             }
             .navigationTitle("Portfolio")
+            .task { await store.refreshQuotes() }
         }
     }
 }
@@ -151,28 +154,36 @@ private struct HoldingRow: View {
     var color: Color = Theme.accent
 
     var body: some View {
-        HStack(spacing: 12) {
-            RoundedRectangle(cornerRadius: 3)
-                .fill(color)
-                .frame(width: 4, height: 36)
-            VStack(alignment: .leading, spacing: 3) {
-                Text(holding.ticker)
-                    .font(.subheadline.weight(.bold))
-                    .foregroundStyle(Theme.textPrimary)
-                Text(holding.companyName)
-                    .font(.caption)
+        NavigationLink {
+            StockDetailView(symbol: holding.ticker, name: holding.companyName, holding: holding)
+        } label: {
+            HStack(spacing: 12) {
+                RoundedRectangle(cornerRadius: 3)
+                    .fill(color)
+                    .frame(width: 4, height: 36)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(holding.ticker)
+                        .font(.subheadline.weight(.bold))
+                        .foregroundStyle(Theme.textPrimary)
+                    Text(holding.companyName)
+                        .font(.caption)
+                        .foregroundStyle(Theme.textSecondary)
+                }
+                Spacer()
+                VStack(alignment: .trailing, spacing: 3) {
+                    Text(holding.marketValue.asCurrency)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(Theme.textPrimary)
+                    Text(holding.gainPercent.asSignedPercent)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(Color.forChange(holding.gain))
+                }
+                Image(systemName: "chevron.right")
+                    .font(.caption2.weight(.semibold))
                     .foregroundStyle(Theme.textSecondary)
             }
-            Spacer()
-            VStack(alignment: .trailing, spacing: 3) {
-                Text(holding.marketValue.asCurrency)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Theme.textPrimary)
-                Text(holding.gainPercent.asSignedPercent)
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(Color.forChange(holding.gain))
-            }
+            .padding(.vertical, 9)
         }
-        .padding(.vertical, 9)
+        .buttonStyle(.plain)
     }
 }

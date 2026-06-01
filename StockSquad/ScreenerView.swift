@@ -6,6 +6,7 @@ struct ScreenerView: View {
     @State private var maxPrice: Double = 500
     @State private var minVolumeMillions: Double = 0
     @State private var pennyOnly = false
+    @State private var watchlistOnly = false
     @State private var sort: SortOption = .topMovers
 
     enum SortOption: String, CaseIterable, Identifiable {
@@ -19,7 +20,8 @@ struct ScreenerView: View {
         var list = store.screener.filter { stock in
             stock.price <= maxPrice &&
             stock.avgDailyVolume >= minVolumeMillions * 1_000_000 &&
-            (!pennyOnly || stock.isPenny)
+            (!pennyOnly || stock.isPenny) &&
+            (!watchlistOnly || store.isWatched(stock.ticker))
         }
         switch sort {
         case .topMovers:   list.sort { $0.dayChangePercent > $1.dayChangePercent }
@@ -35,6 +37,7 @@ struct ScreenerView: View {
                 Theme.bgGradient.ignoresSafeArea()
                 ScrollView {
                     VStack(spacing: 16) {
+                        LiveStatusBar()
                         disclaimerCard
                         filtersCard
                         VStack(spacing: 10) {
@@ -47,14 +50,25 @@ struct ScreenerView: View {
                             ForEach(results) { stock in
                                 ScreenerRow(stock: stock)
                             }
+                            if results.isEmpty {
+                                Text(watchlistOnly
+                                     ? "No starred stocks yet. Tap the ☆ on any stock to add it here."
+                                     : "No stocks match these filters. Try loosening them.")
+                                    .font(.subheadline)
+                                    .foregroundStyle(Theme.textSecondary)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .padding(.vertical, 8)
+                            }
                         }
                     }
                     .padding(.horizontal, 16)
                     .padding(.top, 8)
                     .padding(.bottom, 28)
                 }
+                .refreshable { await store.refreshQuotes() }
             }
             .navigationTitle("Scout")
+            .task { await store.refreshQuotes() }
         }
     }
 
@@ -95,6 +109,10 @@ struct ScreenerView: View {
                 .font(.subheadline)
                 .foregroundStyle(Theme.textPrimary)
                 .tint(Theme.gain)
+            Toggle("Watchlist only ★", isOn: $watchlistOnly)
+                .font(.subheadline)
+                .foregroundStyle(Theme.textPrimary)
+                .tint(Theme.gain)
             Picker("Sort by", selection: $sort) {
                 ForEach(SortOption.allCases) { option in
                     Text(option.rawValue).tag(option)
@@ -107,9 +125,32 @@ struct ScreenerView: View {
 }
 
 private struct ScreenerRow: View {
+    @EnvironmentObject var store: PortfolioStore
     let stock: ScreenerStock
 
     var body: some View {
+        HStack(spacing: 12) {
+            NavigationLink {
+                StockDetailView(symbol: stock.ticker, name: stock.name)
+            } label: {
+                rowContent
+            }
+            .buttonStyle(.plain)
+
+            Button {
+                store.toggleWatchlist(stock.ticker)
+            } label: {
+                Image(systemName: store.isWatched(stock.ticker) ? "star.fill" : "star")
+                    .font(.body)
+                    .foregroundStyle(store.isWatched(stock.ticker) ? .yellow : Theme.textSecondary)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(store.isWatched(stock.ticker) ? "Remove from watchlist" : "Add to watchlist")
+        }
+        .cardStyle(padding: 14)
+    }
+
+    private var rowContent: some View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 6) {
                 HStack(spacing: 6) {
@@ -154,6 +195,5 @@ private struct ScreenerRow: View {
                     .foregroundStyle(Theme.textSecondary)
             }
         }
-        .cardStyle(padding: 14)
     }
 }

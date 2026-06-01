@@ -1,3 +1,6 @@
+# API keys — never commit
+Secrets.swift
+
 # Xcode user-specific state
 xcuserdata/
 *.xcuserstate
